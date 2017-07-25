@@ -48,7 +48,7 @@ import numpy as np
 import pytz
 
 
-class pipy_datalink(object):
+class pi_client(object):
 
     def __init__(self, root=None, calculation=None, interval=None, buildingMeterDB=None):
 
