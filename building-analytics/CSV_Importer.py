@@ -54,6 +54,8 @@ class csv_importer(object):
         # the data imported is saved in a dataframe
         self.data=pd.DataFrame()
         self.tempData = pd.DataFrame()
+        
+        
         self.folderAxis = folderAxis.lower()
         self.fileAxis = fileAxis.lower()
         
@@ -81,50 +83,57 @@ class csv_importer(object):
                 
             #if FolerAxis = M and FileAxis = C (IGNORE THIS CASE FOR NOW, SHOULD BE RARE!!)
         
-        if isinstance(folder, list): #MANY FOLDER CASE
+        if isinstance(folder, list): #########  MANY FOLDER CASES ############
             if isinstance(fileName, list): #MANY FOLDER MANY FILE 
-            
+                _fileList = []
                 # If many files in many folders, handle with m x n routine (yet to plan or implement)
                 for i, folder_ in enumerate(folder):
                     for j, file_ in enumerate(fileName):
+                        
+                        _fileList.append(file_)
                 
                         # Check files input to generate unique list
                         # Use this list to determine the shape of mainDF
                         pass
                     
-                        
+                _fileList = list(set(_fileList))
+                print '#MANY FOLDER MANY FILE '
                 for i, folder_ in enumerate(folder): ##REWORK THESE TO MATCH ABOVE ANALYSIS OF WHICH FILES LIVE OR DIE
                     for j, file_ in enumerate(fileName):##REWORK THESE TO MATCH ABOVE ANALYSIS OF WHICH FILES LIVE OR DIE
-                    
-                    
-                        # DOES NOT HANDLE THE list or list for headRow indexCol idea yet. Maybe we wont use that for this case?
+                            # try open file in each folder, _combine them all to tempDF
+                            # repeat for all file names
+                            # After finishing tempDF merge to mainDF                           
+                            # clean tempDF and move to next folder
+                                    
+                        # DOES NOT HANDLE THE list of list for headRow indexCol idea yet. Maybe we wont use that for this case?
                         _headRow,_indexCol = self._head_and_index(headRow,indexCol,j)
                         
+                        #If folderAxis = fileAxis. Simple _combine
                         if self.folderAxis == self.fileAxis:
-                            # If folderAxis = fileAxis --> Simple. open all, merge or concat
+                            newData = self._load_csv(file_,folder_,_headRow,_indexCol,convertCol)
+                            self.tempData = self._combine(self.tempData,newData,self.fileAxis)
                             pass
                             
                         #if folderAxis = C and fileAxis = M (MOST COMMON CASE!!)
                         if self.folderAxis == 'concat' and self.fileAxis == 'merge':
+                            newData = self._load_csv(file_,folder_,_headRow,_indexCol,convertCol)
+                            self.tempData = self._combine(self.tempData,newData,self.fileAxis)
+                            
                             # try open file in each folder, concat them all in tempDF
                             # After finishing tempDF merge to mainDF
                             pass
                         
+                        #if FolerAxis = M and FileAxis = C (IGNORE THIS CASE FOR NOW, SHOULD BE RARE!!)
                         if self.folderAxis == 'merge' and self.fileAxis == 'concat':
+                           
                             # try open file in each folder, concat them all in tempDF
                             # After finishing tempDF merge to mainDF
                             print "folderAxis = merge and fileAxis = concat not yet implemented!"
                             pass
                     
-                    
-                    
-                    # try open file in each folder, concat them all in tempDF
-                    # After finishing tempDF merge to mainDF
-                    # repeat for all file names
-                    
-                    
-                #if FolerAxis = M and FileAxis = C (IGNORE THIS CASE FOR NOW, SHOULD BE RARE!!)
-                print '#MANY FOLDER MANY FILE '
+                    self.data = self._combine(self.data,self.tempData,direction=self.folderAxis)
+                    self.tempData = pd.DataFrame()
+                
                 pass
     
             else:  #MANY FOLDER 1 FILE CASE
@@ -136,7 +145,7 @@ class csv_importer(object):
                     _headRow,_indexCol = self._head_and_index(headRow,indexCol,i)
 #                    try:
                     newData = self._load_csv(fileName,folder_,_headRow,_indexCol,convertCol)
-                    self._combine(newData, direction = self.folderAxis)
+                    self.tempData = self._combine(self.tempData,newData, direction = self.folderAxis)
 #                    except:
 #                        print "Something went wrong with loading file %s " %file_
                 self.data = self.tempData  
@@ -150,7 +159,7 @@ class csv_importer(object):
                     _headRow,_indexCol = self._head_and_index(headRow,indexCol,i)        
 #                    try:
                     newData = self._load_csv(file_,folder,_headRow,_indexCol,convertCol)
-                    self._combine(newData, direction = self.fileAxis)
+                    self.tempData = self._combine(self.tempData,newData, direction = self.fileAxis)
 #                    except:
 #                        print "Something went wrong with loading file %s " %file_
                 self.data = self.tempData
@@ -160,23 +169,24 @@ class csv_importer(object):
                 self.data=self._load_csv(fileName,folder,headRow,indexCol)
 
 ###############################################################################
-
     def _combine(self,
+                 oldData,
                  newData,
                  direction
                  ):
         '''
-        Will use merge or concat on newly loaded temp data with the self.tempData storage
+        This function uses merge or concat on newly loaded data 'newData' with the self.tempData storage variable
         '''
-        if self.tempData.empty == True:
-            self.tempData = newData
+        if oldData.empty == True:
+            return newData
         else:   
             
             if direction == 'merge':
-                self.tempData = pd.merge(self.tempData,newData,how='outer',left_index=True,right_index=True,copy=True)
+                return pd.merge(oldData,newData,how='outer',left_index=True,right_index=True,copy=True)
             elif direction == 'concat' or direction.lower == 'concatentate':
-                self.tempData = pd.concat([self.tempData,newData],copy=True)
+                return pd.concat([oldData,newData],copy=True)
                 
+        
     def _head_and_index(self,headRow,indexCol,i):
         # to accept different head and index for each file - following the order in the fileName array
         # example call CSV_Importer( [file1,file2], folder, headRow=[0,4], indexCol=[0,1])
@@ -237,32 +247,15 @@ class csv_importer(object):
 
         
         return data
-
-    ##     #def _convert_datetime(df):
-    
-    #        return df
-####################################################################################################################################    
-    def _merge_data(self,df1,df2):
-
-        #start_time = timeit.default_timer()
-
-        #print "merging"
-        
-        dat = df1.join(df2, how="outer")
-        
-        #elapsed = timeit.default_timer() - start_time
-        #print elapsed
-        
-        return dat
 ####################################################################################################################################
 if __name__=='__main__':
     
     start_time = timeit.default_timer()
     # code you want to evaluate
     
-    folder=['test3','test2']
+    folder=['test1','test2']
 
-    fileName="data3.csv"
+    fileName=["data1.csv","data3.csv"]
     rows = [0,4]
     cols = 0
 
@@ -270,7 +263,6 @@ if __name__=='__main__':
     
     print(p.data)
 
-#    p.data.columns=['Temp_Avg', 'RelHum_Avg', 'CHW_Elec', 'Elec', 'Gas', 'HW_Heat']
 #
 #    # rename for modeling - OAT name is hard coded in the code
 #    print p.data.head(10)
