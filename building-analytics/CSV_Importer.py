@@ -94,10 +94,8 @@ class csv_importer(object):
                 
                         # Check files input to generate unique list
                         # Use this list to determine the shape of mainDF
-                        pass
-                    
                 _fileList = list(set(_fileList))
-                print '#MANY FOLDER MANY FILE '
+                
                 for i, folder_ in enumerate(folder): ##REWORK THESE TO MATCH ABOVE ANALYSIS OF WHICH FILES LIVE OR DIE
                     for j, file_ in enumerate(fileName):##REWORK THESE TO MATCH ABOVE ANALYSIS OF WHICH FILES LIVE OR DIE
                             # try open file in each folder, _combine them all to tempDF
@@ -112,24 +110,14 @@ class csv_importer(object):
                         if self.folderAxis == self.fileAxis:
                             newData = self._load_csv(file_,folder_,_headRow,_indexCol,convertCol)
                             self.tempData = self._combine(self.tempData,newData,self.fileAxis)
-                            pass
-                            
                         #if folderAxis = C and fileAxis = M (MOST COMMON CASE!!)
                         if self.folderAxis == 'concat' and self.fileAxis == 'merge':
                             newData = self._load_csv(file_,folder_,_headRow,_indexCol,convertCol)
                             self.tempData = self._combine(self.tempData,newData,self.fileAxis)
-                            
-                            # try open file in each folder, concat them all in tempDF
-                            # After finishing tempDF merge to mainDF
-                            pass
-                        
-                        #if FolerAxis = M and FileAxis = C (IGNORE THIS CASE FOR NOW, SHOULD BE RARE!!)
+                        #if FolerAxis = M and FileAxis = C 
                         if self.folderAxis == 'merge' and self.fileAxis == 'concat':
-                           
-                            # try open file in each folder, concat them all in tempDF
-                            # After finishing tempDF merge to mainDF
-                            print "folderAxis = merge and fileAxis = concat not yet implemented!"
-                            pass
+                            newData = self._load_csv(file_,folder_,_headRow,_indexCol,convertCol)
+                            self.tempData = self._combine(self.tempData,newData,self.fileAxis)
                     
                     self.data = self._combine(self.data,self.tempData,direction=self.folderAxis)
                     self.tempData = pd.DataFrame()
@@ -217,33 +205,37 @@ class csv_importer(object):
         #print fileName
         
         if fileName:
-            folder = os.path.join('..',folder) # Appending onto current folder to get relative directory
-            path = os.path.join(folder,fileName)
-            
-            print "Current path is %s " %path
-            
-            if headRow >0:                
-                data = pd.read_csv(path, index_col=indexCol,skiprows=[i for i in (range(headRow-1))]) # reads file and puts it into a dataframe                
-                try: # convert time into datetime format
-                    data.index = pd.to_datetime(data.index, format = '%m/%d/%y %H:%M') #special case format 1/4/14 21:30
-                except:
-                    data.index = pd.to_datetime(data.index, dayfirst=False, infer_datetime_format = True)             
-
-            else:
-                data = pd.read_csv(path, index_col=indexCol)# reads file and puts it into a dataframe
-                try: # convert time into datetime format
-                    data.index = pd.to_datetime(data.index, format = '%m/%d/%y %H:%M') #special case format 1/4/14 21:30
-                except:
-                    data.index = pd.to_datetime(data.index, dayfirst=False, infer_datetime_format = True)             
+            try:
+                folder = os.path.join('..',folder) # Appending onto current folder to get relative directory
+                path = os.path.join(folder,fileName)
                 
+                print "Current path is %s " %path
+                
+                if headRow >0:                
+                    data = pd.read_csv(path, index_col=indexCol,skiprows=[i for i in (range(headRow-1))]) # reads file and puts it into a dataframe                
+                    try: # convert time into datetime format
+                        data.index = pd.to_datetime(data.index, format = '%m/%d/%y %H:%M') #special case format 1/4/14 21:30
+                    except:
+                        data.index = pd.to_datetime(data.index, dayfirst=False, infer_datetime_format = True)             
+    
+                else:
+                    data = pd.read_csv(path, index_col=indexCol)# reads file and puts it into a dataframe
+                    try: # convert time into datetime format
+                        data.index = pd.to_datetime(data.index, format = '%m/%d/%y %H:%M') #special case format 1/4/14 21:30
+                    except:
+                        data.index = pd.to_datetime(data.index, dayfirst=False, infer_datetime_format = True)   
+
+            except IOError:
+                  print 'Failed to load %s' %path + ' file missing!'
+                  return pd.DataFrame()      
         else: 
             print 'NO FILE NAME'
             return
-
-        if convertCol == True: # Convert all columns to numeric type if option set to true. Default option is true.
-            for col in data.columns: # Check columns in dataframe to see if they are numeric
-                if(data[col].dtype != np.number): # If particular column is not numeric, then convert to numeric type
-                      data[col]=pd.to_numeric(data[col], errors="coerce")
+    
+            if convertCol == True: # Convert all columns to numeric type if option set to true. Default option is true.
+                for col in data.columns: # Check columns in dataframe to see if they are numeric
+                    if(data[col].dtype != np.number): # If particular column is not numeric, then convert to numeric type
+                          data[col]=pd.to_numeric(data[col], errors="coerce")
 
         
         return data
@@ -253,15 +245,15 @@ if __name__=='__main__':
     start_time = timeit.default_timer()
     # code you want to evaluate
     
-    folder=['test1','test2']
+    folder=['test2','test3']
 
     fileName=["data1.csv","data3.csv"]
     rows = [0,4]
     cols = 0
 
-    p = csv_importer(fileName,folder,headRow=rows,indexCol=cols,folderAxis='concat',fileAxis = 'merge')
+    p = csv_importer(fileName,folder,headRow=rows,indexCol=cols,folderAxis='merge',fileAxis = 'concat')
     
-    print(p.data)
+    print(p.data.shape)
 
 #
 #    # rename for modeling - OAT name is hard coded in the code
