@@ -39,9 +39,9 @@ TO DO:
     - meta data
     - what if I want to have different headers for different files (currently the header input header = [0,2,3] will skip rows 0,2,3 from all files that are being loaded)
     - add robust test cases
-    - improve speed
+    - improve speed (?)
 
-last modified: July 26 2017
+last modified: August 1 2017
 @author Correy Koshnick <ckoshnick@ucdavis.edu>
 """
 
@@ -63,54 +63,39 @@ class csv_importer(object):
                  convertCol=True # convertCol specifies if user wants data to all be of numeric type or not. Default is convert to numeric type
                 ):
         '''
-        Add doc string to explain function
+        When initializing this class it will do the following:
+            -Scan the input folder/file structure to determine if there is a single/many files or a single/many folders
+            -Manages headRow indexCol sizes with function _head_and_index
+            -Loads data from CSV into temp DataFrame until it is properly shaped
+            -Once shaped it combined temp DataFrame with main DataFrame
+            -Stores final data in self.data
+            
+            # DOES NOT HANDLE THE list of list for headRow indexCol idea yet. Maybe we wont use that for this case?
         '''
-        # loads the TS file or multiple files - it also converts timestamps in date_time format
-        # if no info is provided it assumes the first column is the index and the first row is the header
-        
-        
         # the data imported is saved in a dataframe
         self.data=pd.DataFrame()
         self.tempData = pd.DataFrame()        
         
         self.folderAxis = folderAxis.lower()
         self.fileAxis = fileAxis.lower()
-        
-        ### CHanges to make ###
-        # done: look through folders first, so check is instance folder -> list first
-        # done: if only 1 folder, handle files with fileAxis='m' or fileAxis='c'
-        # done: if many folders, but only 1 file handle with folderAxis = 'm' or folderAxis = 'c'
-        # done: If many files in many folders, handle with m x n routine (yet to plan or implement)
-            # m x n routine plan
-            # If folderAxis = fileAxis --> Simple. open all, merge or concat
-            
-            #if folderAxis = C and fileAxis = M
-                # Check files input to generate unique list
-                # try open file in each folder, concat them all in tempDF
-                # After finishing tempDF merge to mainDF
-                # repeat for all file names
    
         if isinstance(folder, list): #########  MANY FOLDER CASES ############
-            if isinstance(fileName, list): #MANY FOLDER MANY FILE 
+            if isinstance(fileName, list): # MANY FOLDER MANY FILE 
+               
+                ###--##--## THIS CODE SHOULD BE REMOVED
                 _fileList = []
-                # If many files in many folders, handle with m x n routine (yet to plan or implement)
+                # Check files input to generate unique list
                 for i, folder_ in enumerate(folder):
                     for j, file_ in enumerate(fileName):
-                        
                         _fileList.append(file_)
-                
-                        # Check files input to generate unique list
-                        # Use this list to determine the shape of mainDF
                 _fileList = list(set(_fileList))
+                ###--##--## END CODE REMOVAL SECTION
                 
-                for i, folder_ in enumerate(folder): ##REWORK THESE TO MATCH ABOVE ANALYSIS OF WHICH FILES LIVE OR DIE
-                    for j, file_ in enumerate(fileName):##REWORK THESE TO MATCH ABOVE ANALYSIS OF WHICH FILES LIVE OR DIE
-                            # try open file in each folder, _combine them all to tempDF
-                            # repeat for all file names
-                            # After finishing tempDF merge to mainDF                           
-                            # clean tempDF and move to next folder
+                for i, folder_ in enumerate(folder):
+                    for j, file_ in enumerate(fileName):
                                     
                         # DOES NOT HANDLE THE list of list for headRow indexCol idea yet. Maybe we wont use that for this case?
+                       
                         _headRow,_indexCol = self._head_and_index(headRow,indexCol,j)
                         
                         #If folderAxis = fileAxis. Simple _combine
@@ -127,10 +112,10 @@ class csv_importer(object):
                             self.tempData = self._combine(self.tempData,newData,self.fileAxis)
                     
                     self.data = self._combine(self.data,self.tempData,direction=self.folderAxis)
-                    self.tempData = pd.DataFrame()
                     
-            else:   ### #MANY FOLDER 1 FILE CASE ####
-                # if many folders, but only 1 file handle wifth olderAxis = 'm' or folderAxis = 'c'            
+                    self.tempData = pd.DataFrame() #Reset temp data to empty
+                    
+            else:   #### MANY FOLDER 1 FILE CASE ####
                 for i, folder_ in enumerate(folder):
                     _headRow,_indexCol = self._head_and_index(headRow,indexCol,i)
                     newData = self._load_csv(fileName,folder_,_headRow,_indexCol,convertCol)
@@ -152,6 +137,7 @@ class csv_importer(object):
 
 #### End __init__
 ###############################################################################
+    
     def _combine(self,
                  oldData,
                  newData,
@@ -191,7 +177,6 @@ class csv_importer(object):
                  ):
         
         #start_time = timeit.default_timer()
-        #print fileName
         
         if fileName:
             try:
@@ -228,6 +213,7 @@ class csv_importer(object):
         return data
 # END functions   
 ###############################################################################
+
 def _test():
     start_time = timeit.default_timer()
     folder=['test2','test3']
@@ -239,8 +225,6 @@ def _test():
     print p.data.head(10)
     print p.data.shape
     print elapsed, ' seconds to run'
-
-
 
 if __name__=='__main__':
     _test()
