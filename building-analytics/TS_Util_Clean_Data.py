@@ -276,11 +276,12 @@ class TS_Util(object):
 
         elif method == "rstd":
 
-            rl_std = data.rolling(window=window).std(how=any).fillna(
-                    method='bfill').fillna(method='ffill')
+       	    rl_mean=data.rolling(window=window).mean(how=any)
+	    rl_std = data.rolling(window=window).std(how=any).fillna(method='bfill').fillna(method='ffill')
 
-            lowBound = data.mean() - coeff * rl_std
-            highBound = data.mean() + coeff * rl_std
+            lowBound = rl_mean - coeff * rl_std
+
+            highBound = rl_mean + coeff * rl_std
 
         elif method == "rmedian":
 
