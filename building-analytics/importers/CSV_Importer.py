@@ -3,21 +3,9 @@
 ## Initially this will work for building-level meters data
 ## Initially this will work with .csv files, then it will incorporate the Lucid API (or others)
 ## --- Functionality with .csv
-## Input (args):
-    fileNames = Specify file name 
-    folder = and path, specify [(via config file?) name mapping to type of meters]
-    folderAxis = The direction that the dataframes will be combined based on the folder to folder relationship
-    fileAxis = The direction that the dataframes will be combined based on the folder to folder relationship
-         - folderAxis/fileAxis = 'concat' or 'merge'
-         - typically the folders will represent the time dimension and will be concat (default value)
-         - the files will represnt different metering data and will be merged
-    
-    headRow = which rows to skip, can be a list or single value
-    indexCol = which column from the file is the index, all merged dataframes will be merged on the index (dateTime index)
 
-## Output (return): data in a dataframe, metadata table [does not return meta data at the moment]
+## Output (return): data in a dataframe, metadata table [[[does not return meta data at the moment]]]
 ## Note: may want to have a separate class for data + metadata
-
 
 V0.1 
 - works fine, not tested extensively
@@ -45,7 +33,7 @@ TO DO:
     - add robust test cases
     - improve speed (?)
 
-last modified: August 1 2017
+last modified: August 11 2017
 @author Correy Koshnick <ckoshnick@ucdavis.edu>
 """
 
@@ -55,18 +43,17 @@ import numpy as np
 import timeit
 import pytz
 
-
 class csv_importer(object):
 
 ####################################################################################################################################    
     def __init__(self,
                  fileNames=None,
-                 folder=None,
+                 folders=None,
                  folderAxis = 'concat',
                  fileAxis = 'merge',
                  headRow=0,
                  indexCol=0,
-                 convertCol=True # convertCol specifies if user wants data to all be of numeric type or not. Default is convert to numeric type
+                 convertCol=True
                 ):
         '''
         When initializing this class it will do the following:
@@ -76,7 +63,40 @@ class csv_importer(object):
             -Once shaped it combined temp DataFrame with main DataFrame
             -Stores final data in self.data
             
-            # DOES NOT HANDLE THE list of list for headRow indexCol idea yet. Maybe we wont use that for this case?
+        # DOES NOT HANDLE THE list of list for headRow indexCol idea yet. Maybe we wont use that for this case?  
+   
+        Parameters
+        ----------
+        fileNames: List of strings or string
+            specify file name(s) that will be loaded from the folder strucuture passed in
+
+        folders: List of strings or string
+            The path(s) that will be searched for the above file(s)
+            
+        folderAxis: string = 'merge' or 'concat'
+            The direction that the dataframes will be combined based on the folder to folder relationship
+            default = 'concat' assuming the folder-folder relationship is a timeseries
+            
+        fileAxis: string = 'merge' or 'concat'
+            The direction that the dataframes will be combined based on the folder to folder relationship
+            default = 'merge' assuming the file-file relationship is different data meters for the same timeframe
+            
+        headRow: List of int or int
+            Choose which rows to skip as the header when loading CSV files. A list will pass the
+            headRow index with the corresponding file using the _head_and_index function
+            
+        indexCol: int
+            which column from the file is the index, all merged dataframes will be merged on the index (dateTime index)
+            
+        convertCol: bool 
+            convertCol specifies if user wants data to all be of numeric type or not. Default is convert to numeric type           folders: Dataframe
+
+
+        Returns
+        -------
+        data: Dataframe
+            Pandas dataframe with timestamp index adjusted for local timezone
+
         '''
         # the data imported is saved in a dataframe
         self.data=pd.DataFrame()
@@ -91,19 +111,19 @@ class csv_importer(object):
             print('headRow length must match fileNames length as the header '
                   'rows are applied 1-to-1 with the files listed in fileNames!')
     
-        if isinstance(folder, list): #########  MANY FOLDER CASES ############
+        if isinstance(folders, list): #########  MANY FOLDER CASES ############
             if isinstance(fileNames, list): # MANY FOLDER MANY FILE 
                
                 ###--##--## THIS CODE SHOULD BE REMOVED
                 _fileList = []
                 # Check files input to generate unique list
-                for i, folder_ in enumerate(folder):
+                for i, folder_ in enumerate(folders):
                     for j, file_ in enumerate(fileNames):
                         _fileList.append(file_)
                 _fileList = list(set(_fileList))
                 ###--##--## END CODE REMOVAL SECTION
                 
-                for i, folder_ in enumerate(folder):
+                for i, folder_ in enumerate(folders):
                     for j, file_ in enumerate(fileNames):
                                     
                         # DOES NOT HANDLE THE list of list for headRow indexCol idea yet. Maybe we wont use that for this case?
@@ -128,7 +148,7 @@ class csv_importer(object):
                     self.tempData = pd.DataFrame() #Reset temp data to empty
                     
             else:   #### MANY FOLDER 1 FILE CASE ####
-                for i, folder_ in enumerate(folder):
+                for i, folder_ in enumerate(folders):
                     _headRow,_indexCol = self._head_and_index(headRow,indexCol,i)
                     newData = self._load_csv(fileNames,folder_,_headRow,_indexCol,convertCol)
                     self.tempData = self._combine(self.tempData,newData, direction = self.folderAxis)
@@ -145,7 +165,7 @@ class csv_importer(object):
             
             else: #### SINGLE FOLDER SINGLE FILE CASE ####
                 print "#1 FOLDER 1 FILE CASE"
-                self.data=self._load_csv(fileNames,folder,headRow,indexCol)
+                self.data=self._load_csv(fileNames,folders,headRow,indexCol)
         
         
         #Last thing to do: remove duplicates and sort index
@@ -235,9 +255,33 @@ class csv_importer(object):
             elif direction == 'concat' or direction.lower == 'concatentate':
                 return pd.concat([oldData,newData],copy=False)              
         
-    def _head_and_index(self,headRow,indexCol,i):
-        # to accept different head and index for each file - following the order in the fileNames array
-        # example call CSV_Importer( [file1,file2], folder, headRow=[0,4], indexCol=[0,1])
+    def _head_and_index(self,
+                        headRow,
+                        indexCol,
+                        i):
+        '''
+        This function helps to manage the headRow variable as the files are being read.
+        When the first file from fileNames is being opened by _load_csv this function will look
+        at the corresponding self.headRows variable and self.indexCol variable and pass them into
+        the _load_csv function
+        
+        Parameters
+        ----------
+        headRow: List of int or int
+            Choose which rows to skip as the header when loading CSV files. A list will pass the
+            headRow index with the corresponding file using the _head_and_index function
+            
+        indexCol: int
+            which column from the file is the index, all merged dataframes will be merged on the index (dateTime index)
+            
+        i: int
+            The index passed in from __init__ as it is iterating over the files in the fileNames
+
+        Returns
+        -------
+        _headRow,_indexCol: int,int
+            The corresponding values explained above
+        '''
         if isinstance(headRow, list):
             _headRow=headRow[i]
         else:
@@ -249,18 +293,40 @@ class csv_importer(object):
         return _headRow,_indexCol
                     
     def _load_csv(self, 
-                  fileNames,
+                  fileName,
                   folder,
                   headRow,
                   indexCol,
                   convertCol
                  ):
+        '''
+        Parameters
+        ----------
+        fileName: string
+            specific file name that will be loaded from the folder
+
+        folder: string
+            The path that will be searched for the above file
+            
+        headRow: int
+            Choose which rows to skip as the header when loading CSV files.
+            
+        indexCol: int
+            which column from the file is the index, all merged dataframes will be merged on the index (dateTime index)
+            
+        convertCol: bool 
+            convertCol specifies if user wants data to all be of numeric type or not. Default is convert to numeric type           folders: Dataframe
+
+        Returns
+        -------
+        data: Dataframe
+            newly loaded pd DataFrame from the CSV file passed in. usually immediately passed into _combine function
+        '''        
         
         #start_time = timeit.default_timer()
-        
         try:
             folder = os.path.join('..','..',folder) # Appending onto current folder to get relative directory
-            path = os.path.join(folder,fileNames)
+            path = os.path.join(folder,fileName)
             
             print "Current path is %s " %path
             
