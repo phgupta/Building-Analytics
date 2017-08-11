@@ -357,3 +357,70 @@ class TS_Util(object):
         data = self.remove_outOfBound(data, lowBound, highBound)
 
         return data
+
+    def _find_equal_values(self, data, val):
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''                    
+        bool_sel = data == val
+            
+        return bool_sel
+
+    
+    def _find_above_values(self, data, val):
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''                    
+        bool_sel = data > val
+            
+        return bool_sel
+
+    
+    def _find_below_values(self, data, val):
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''                    
+        bool_sel = data < val
+            
+        return bool_sel
+
+    def count_if(self, data, condition, val, how="number"):
+        
+        """
+        condition = "equal", "below", "above"
+        val = value to compare against
+        how = "number" or "percent"
+        """
+        if condition == "equal":
+        
+            count = self._find_equal_values(data,val).sum()
+
+        elif condition == "above":
+
+            count = self._find_above_values(data,val).sum()
+      
+        elif condition == "below":
+
+            count = self._find_below_values(data,val).sum()
+
+        if how == "number":
+            
+            return count
+    
+        elif how == "percent":
+        
+            return count/data.shape[0]*1.0*100
+
+        return
