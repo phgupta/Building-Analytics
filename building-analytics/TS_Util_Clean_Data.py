@@ -113,6 +113,7 @@ class TS_Util(object):
 
             start_ok_data = data.first_valid_index()
 
+      
         data = data.loc[start_ok_data:, :]
 
         return data
@@ -133,6 +134,7 @@ class TS_Util(object):
 
             end_ok_data = data.last_valid_index()
 
+     
         data = data.loc[:end_ok_data, :]
 
         return data
@@ -172,7 +174,7 @@ class TS_Util(object):
 
         return data[bool_sel]
 
-    def count_missing(self, data, how="number"):
+    def count_missing(self, data, output="number"):
         '''
         Parameters
         ----------
@@ -184,11 +186,11 @@ class TS_Util(object):
 
         count = self._find_missing(data).sum()
 
-        if how == "number":
+        if output == "number":
 
             return count
 
-        elif how == "percent":
+        elif output == "percent":
 
             return count / (data.shape[0]) * 1.0 * 100
 
@@ -236,7 +238,7 @@ class TS_Util(object):
 
         return data
 
-    def count_outOfBound(self, data, lowBound, highBound):
+    def count_outOfBound(self, data, lowBound, highBound, output):
         '''      
         Parameters
         ----------
@@ -245,8 +247,14 @@ class TS_Util(object):
         -------
         '''
         count = self._find_outOfBound(data, lowBound, highBound).sum()
+        
+        if output == "number":
 
-        return count
+            return count
+
+        elif output == "percent":
+
+            return count / (data.shape[0]) * 1.0 * 100
 
     def remove_outOfBound(self, data, lowBound, highBound):
         '''      
@@ -277,7 +285,7 @@ class TS_Util(object):
         elif method == "rstd":
 
        	    rl_mean=data.rolling(window=window).mean(how=any)
-	    rl_std = data.rolling(window=window).std(how=any).fillna(method='bfill').fillna(method='ffill')
+            rl_std = data.rolling(window=window).std(how=any).fillna(method='bfill').fillna(method='ffill')
 
             lowBound = rl_mean - coeff * rl_std
 
@@ -328,7 +336,7 @@ class TS_Util(object):
 
         return data
 
-    def count_outliers(self, data, method, coeff, window=10):
+    def count_outliers(self, data, method, coeff, output, window=10):
         '''      
         Parameters
         ----------
@@ -339,7 +347,9 @@ class TS_Util(object):
         lowBound, highBound = self._calc_outliers_bounds(
             data, method, coeff, window)
 
-        data = self.count_outOfBound(data, lowBound, highBound)
+        count = self.count_outOfBound(data, lowBound, highBound, output=output)
+        
+        
 
         return count
 
@@ -365,7 +375,8 @@ class TS_Util(object):
 
         Returns
         -------
-        '''                    
+        '''        
+        #print(val)
         bool_sel = data == val
             
         return bool_sel
@@ -396,7 +407,7 @@ class TS_Util(object):
             
         return bool_sel
 
-    def count_if(self, data, condition, val, how="number"):
+    def count_if(self, data, condition, val, output="number"):
         
         """
         condition = "equal", "below", "above"
@@ -415,11 +426,11 @@ class TS_Util(object):
 
             count = self._find_below_values(data,val).sum()
 
-        if how == "number":
+        if output == "number":
             
             return count
     
-        elif how == "percent":
+        elif output == "percent":
         
             return count/data.shape[0]*1.0*100
 
