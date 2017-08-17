@@ -368,7 +368,9 @@ class TS_Util(object):
 
         return data
 
-    def _find_equal_values(self, data, val):
+#####################################
+
+    def _find_equal_to_values(self, data, val):
         '''      
         Parameters
         ----------
@@ -377,12 +379,12 @@ class TS_Util(object):
         -------
         '''        
         #print(val)
-        bool_sel = data == val
+        bool_sel = (data == val)
             
         return bool_sel
 
-    
-    def _find_above_values(self, data, val):
+
+    def _find_greater_than_values(self, data, val):
         '''      
         Parameters
         ----------
@@ -390,12 +392,12 @@ class TS_Util(object):
         Returns
         -------
         '''                    
-        bool_sel = data > val
+        bool_sel = (data > val)
             
         return bool_sel
 
     
-    def _find_below_values(self, data, val):
+    def _find_less_than_values(self, data, val):
         '''      
         Parameters
         ----------
@@ -403,9 +405,47 @@ class TS_Util(object):
         Returns
         -------
         '''                    
-        bool_sel = data < val
+        bool_sel = (data < val)
             
         return bool_sel
+
+
+    def _find_greater_than_or_equal_to_values(self, data, val):
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''           
+        bool_sel = (data >= val)
+            
+        return bool_sel
+
+    def _find_less_than_or_equal_to_values(self, data, val):
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''           
+        bool_sel = (data <= val)
+            
+        return bool_sel
+
+    def _find_different_from_values(self, data, val):
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''           
+        bool_sel = ~(data == val)
+            
+        return bool_sel
+
 
     def count_if(self, data, condition, val, output="number"):
         
@@ -414,17 +454,30 @@ class TS_Util(object):
         val = value to compare against
         how = "number" or "percent"
         """
-        if condition == "equal":
+        if condition == "=":
         
-            count = self._find_equal_values(data,val).sum()
+            count = self._find_equal_to_values(data,val).sum()
 
-        elif condition == "above":
+        elif condition == ">":
 
-            count = self._find_above_values(data,val).sum()
+            count = self._find_greater_than_values(data,val).sum()
       
-        elif condition == "below":
+        elif condition == "<":
 
-            count = self._find_below_values(data,val).sum()
+            count = self._find_less_than_values(data,val).sum()
+
+        elif condition == ">=":
+
+            count = self._find_greater_than_or_equal_to_values(data,val).sum()
+
+        elif condition == "<=":
+
+            count = self._find_less_than_or_equal_to_values(data,val).sum()
+       
+        elif condition == "!=":
+
+            count = self._find_different_from_values(data,val).sum()
+
 
         if output == "number":
             
@@ -434,4 +487,5 @@ class TS_Util(object):
         
             return count/data.shape[0]*1.0*100
 
-        return
+        return count
+        
