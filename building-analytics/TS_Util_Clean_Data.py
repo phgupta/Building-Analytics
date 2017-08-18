@@ -541,14 +541,14 @@ class TS_Util(object):
         -------
         '''    
         # remove initial and final missing data
-        remove_start_NaN(data, var)
-        remove_end_NaN(data, var)
+        self.remove_start_NaN(data, var)
+        self.remove_end_NaN(data, var)
         
         # create list of start events
-        start = get_start_events(data, var)
+        start = self.get_start_events(data, var)
         
         # create list of end events
-        end = get_end_events(data, var)
+        end = self.get_end_events(data, var)
             
         # merge lists into dataframe and calc length
         events = pd.DataFrame.from_items([("start",start), ("end",end )])
