@@ -488,4 +488,76 @@ class TS_Util(object):
             return count/data.shape[0]*1.0*100
 
         return count
+
+#####################################
+
+    def get_start_events(self, data, var = "T_ctrl [oF]"): # create list of start events
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''
+        start_event = (data[var].isnull()) & ~(data[var].shift().isnull()) # find NaN start event
+        start = data[start_event].index.tolist() # selector for these events
+
+
+        if np.isnan(data.loc[data.index[0],var]): # if the first record is NaN
+            start =  [data.index[0]] + start # add first record as starting time for first NaN event
+        else:
+            start = start
+        return start
+
+
+    def get_end_events(self, data, var = "T_ctrl [oF]"): # create list of end events
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''
+        end_events = ~(data[var].isnull()) & (data[var].shift().isnull()) # find NaN end events
+        end = data[end_events].index.tolist() # selector for these events
+
+        if ~np.isnan(data.loc[data.index[0],var]): # if first record is not NaN
+            end.remove(end[0]) # remove the endpoint ()
+
+        if np.isnan(data.loc[data.index[-1],var]): # if the last record is NaN
+            end =  end + [data.index[-1]]  # add last record as ending time for first NaN event
+        else:
+            end = end
+
+        return end
+
+
+    def create_event_table(self, data, var): # create dataframe of of start-end-length for current house/tstat
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''    
+        # remove initial and final missing data
+        remove_start_NaN(data, var)
+        remove_end_NaN(data, var)
+        
+        # create list of start events
+        start = get_start_events(data, var)
+        
+        # create list of end events
+        end = get_end_events(data, var)
+            
+        # merge lists into dataframe and calc length
+        events = pd.DataFrame.from_items([("start",start), ("end",end )])
+        
+        events["length_min"] = (events["end"] - events["start"]).dt.total_seconds()/60 # note: this needs datetime index
+        
+        #print events
+        events.set_index("start",inplace=True)
+
+        return events
+
         
