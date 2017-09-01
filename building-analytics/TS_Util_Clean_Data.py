@@ -7,6 +7,7 @@ Created on Wed Jul 26 2017
 Update Aug 08 2017
 
 """
+from __future__ import division
 import pandas as pd
 import os
 import sys
@@ -131,9 +132,7 @@ class TS_Util(object):
             end_ok_data = data[var].last_valid_index()
 
         else:
-
             end_ok_data = data.last_valid_index()
-
      
         data = data.loc[:end_ok_data, :]
 
@@ -192,7 +191,7 @@ class TS_Util(object):
 
         elif output == "percent":
 
-            return count / (data.shape[0]) * 1.0 * 100
+            return ((count / (data.shape[0])) * 100)
 
     def remove_missing(self, data, how):
         '''      
