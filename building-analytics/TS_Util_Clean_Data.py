@@ -138,7 +138,7 @@ class TS_Util(object):
 
         return data
 
-    def _find_missing(self, data):
+    def _find_missing(self, data, multi_col_how=None):
         '''
         Function takes in pandas dataframe and find missing values in each column
 
@@ -151,10 +151,24 @@ class TS_Util(object):
         data: Dataframe
 
         '''
+        if multi_col_how == None:
 
-        return data.isnull()
+            bool_sel = data.isnull()
 
-    def display_missing(self, data, how="any"):
+        elif multi_col_how == "any":
+
+            bool_sel = self._find_missing(data).any(axis=1)
+
+        elif multi_col_how == "all":
+
+            bool_sel = self._find_missing(data).all(axis=1)
+
+        else:
+            print("error in multi_col_how input")
+
+        return bool_sel
+
+    def display_missing(self, data, multi_col_how="any"):
         '''      
         Parameters
         ----------
@@ -163,13 +177,13 @@ class TS_Util(object):
         -------
         '''
 
-        if how == "any":
+        if multi_col_how == "any":
 
-            bool_sel = self._find_missing(data).any(axis=1)
+            bool_sel = self._find_missing(data,multi_col_how="any")
 
-        elif how == "all":
+        elif multi_col_how == "all":
 
-            bool_sel = self._find_missing(data).all(axis=1)
+            bool_sel = self._find_missing(data,multi_col_how="all")
 
         return data[bool_sel]
 
@@ -183,7 +197,7 @@ class TS_Util(object):
         -------
         '''
 
-        count = self._find_missing(data).sum()
+        count = self._find_missing(data,multi_col_how=None).sum()
 
         if output == "number":
 
@@ -193,7 +207,7 @@ class TS_Util(object):
 
             return ((count / (data.shape[0])) * 100)
 
-    def remove_missing(self, data, how):
+    def remove_missing(self, data, multi_col_how="any"):
         '''      
         Parameters
         ----------
@@ -202,13 +216,13 @@ class TS_Util(object):
         -------
         '''
 
-        if how == "any":
+        if multi_col_how == "any":
 
-            bool_sel = self._find_missing(data).any(axis=1)
+            bool_sel = self._find_missing(data,multi_col_how="any")
 
-        elif how == "all":
+        elif multi_col_how == "all":
 
-            bool_sel = self._find_missing(data).all(axis=1)
+            bool_sel = self._find_missing(data,multi_col_how="all")
 
         return data[~bool_sel]
 
