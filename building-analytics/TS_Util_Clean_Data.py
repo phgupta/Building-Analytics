@@ -23,20 +23,10 @@ import matplotlib
 
 class TS_Util(object):
 
-    def load_TS(self, fileName, folder):
-        '''      
-        Parameters
-        ----------
+######################################################################## 
+## simple load file section - eventually replace this with CSV_Importer 
 
-        Returns
-        -------
-        '''
-        path = os.path.join(folder, fileName)
-        data = pd.read_csv(path, index_col=0)
-        data = self.set_TS_index(data)
-        return data
-
-    def set_TS_index(self, data):
+    def _set_TS_index(self, data):
         '''      
         Parameters
         ----------
@@ -52,6 +42,22 @@ class TS_Util(object):
             data[col] = pd.to_numeric(data[col], errors="coerce")
 
         return data
+
+    def load_TS(self, fileName, folder):
+        '''      
+        Parameters
+        ----------
+
+        Returns
+        -------
+        '''
+        path = os.path.join(folder, fileName)
+        data = pd.read_csv(path, index_col=0)
+        data = self._set_TS_index(data)
+        return data
+
+######################################################################## 
+## time correction for time zones - eventually replace this with CSV_Importer 
 
     def _utc_to_local(self, data, local_zone="America/Los_Angeles"):
         '''
@@ -98,6 +104,10 @@ class TS_Util(object):
 
         return timestamp_new
 
+######################################################################## 
+## remove start and end NaN: Note issue with multi-column df
+
+
     def remove_start_NaN(self, data, var=None):
         '''      
         Parameters
@@ -138,7 +148,11 @@ class TS_Util(object):
 
         return data
 
-    def _find_missing(self, data, multi_col_how=None):
+######################################################################## 
+## Missing data section
+
+
+    def _find_missing_return_frame(self, data):
         '''
         Function takes in pandas dataframe and find missing values in each column
 
@@ -151,24 +165,36 @@ class TS_Util(object):
         data: Dataframe
 
         '''
-        if multi_col_how == None:
+        return data.isnull()
 
-            bool_sel = data.isnull()
 
-        elif multi_col_how == "any":
+    def _find_missing(self, data, return_bool=False):
 
-            bool_sel = self._find_missing(data).any(axis=1)
+        if return_bool == False: # this returns the full table with True where the condition is true
 
-        elif multi_col_how == "all":
+            data = self._find_missing_return_frame(data)
 
-            bool_sel = self._find_missing(data).all(axis=1)
+            return data
+
+        elif return_bool == "any": # this returns a bool selector if any of the column is True
+
+            bool_sel = self._find_missing_return_frame(data).any(axis=1)
+
+            return bool_sel
+
+        elif return_bool == "all": # this returns a bool selector if all of the column are True
+
+            bool_sel = self._find_missing_return_frame(data).all(axis=1)
+
+            return bool_sel
 
         else:
             print("error in multi_col_how input")
 
-        return bool_sel
+        return
 
-    def display_missing(self, data, multi_col_how="any"):
+
+    def display_missing(self, data, return_bool="any"):
         '''      
         Parameters
         ----------
@@ -177,13 +203,13 @@ class TS_Util(object):
         -------
         '''
 
-        if multi_col_how == "any":
+        if return_bool == "any":
 
-            bool_sel = self._find_missing(data,multi_col_how="any")
+            bool_sel = self._find_missing(data,return_bool="any")
 
-        elif multi_col_how == "all":
+        elif return_bool == "all":
 
-            bool_sel = self._find_missing(data,multi_col_how="all")
+            bool_sel = self._find_missing(data,return_bool="all")
 
         return data[bool_sel]
 
@@ -197,7 +223,7 @@ class TS_Util(object):
         -------
         '''
 
-        count = self._find_missing(data,multi_col_how=None).sum()
+        count = self._find_missing(data,return_bool=False).sum()
 
         if output == "number":
 
@@ -207,7 +233,7 @@ class TS_Util(object):
 
             return ((count / (data.shape[0])) * 100)
 
-    def remove_missing(self, data, multi_col_how="any"):
+    def remove_missing(self, data, return_bool="any"):
         '''      
         Parameters
         ----------
@@ -216,15 +242,19 @@ class TS_Util(object):
         -------
         '''
 
-        if multi_col_how == "any":
+        if return_bool == "any":
 
-            bool_sel = self._find_missing(data,multi_col_how="any")
+            bool_sel = self._find_missing(data,return_bool="any")
 
-        elif multi_col_how == "all":
+        elif return_bool == "all":
 
-            bool_sel = self._find_missing(data,multi_col_how="all")
+            bool_sel = self._find_missing(data,return_bool="all")
 
         return data[~bool_sel]
+
+######################################################################## 
+## Out of Bound section
+
 
     def _find_outOfBound(self, data, lowBound, highBound):
         '''      
@@ -282,6 +312,9 @@ class TS_Util(object):
 
         return data
 
+######################################################################## 
+## Outliers section
+
     def _calc_outliers_bounds(self, data, method, coeff, window):
         '''      
         Parameters
@@ -292,8 +325,8 @@ class TS_Util(object):
         '''
         if method == "std":
 
-            lowBound = coeff * data.mean(axis=0) - coeff * data.std(axis=0)
-            highBound = coeff * data.mean(axis=0) + coeff * data.std(axis=0)
+            lowBound = (data.mean(axis=0) - coeff * data.std(axis=0)).values[0]
+            highBound = (data.mean(axis=0) + coeff * data.std(axis=0)).values[0]
 
         elif method == "rstd":
 
@@ -381,7 +414,8 @@ class TS_Util(object):
 
         return data
 
-#####################################
+######################################################################## 
+## If condition section
 
     def _find_equal_to_values(self, data, val):
         '''      
@@ -502,7 +536,8 @@ class TS_Util(object):
 
         return count
 
-#####################################
+######################################################################## 
+## Missing Data Events section
 
     def get_start_events(self, data, var = "T_ctrl [oF]"): # create list of start events
         '''      
